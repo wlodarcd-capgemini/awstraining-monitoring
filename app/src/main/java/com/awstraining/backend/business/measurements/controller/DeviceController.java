@@ -9,6 +9,8 @@ import com.awstraining.backend.api.rest.v1.model.Measurement;
 import com.awstraining.backend.api.rest.v1.model.Measurements;
 import com.awstraining.backend.business.measurements.MeasurementDO;
 import com.awstraining.backend.business.measurements.MeasurementService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +24,12 @@ class DeviceController implements DeviceIdApi {
     private static final Logger LOGGER = LogManager.getLogger(DeviceController.class);
 
     private final MeasurementService service;
+    private final MeterRegistry meterRegistry;
 
     @Autowired
-    public DeviceController(final MeasurementService service) {
+    public DeviceController(final MeasurementService service, final MeterRegistry meterRegistry) {
         this.service = service;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
@@ -44,6 +48,7 @@ class DeviceController implements DeviceIdApi {
                 .toList();
         LOGGER.info("Measurements size for device '{}'", measurements.size());
         final Measurements measurementsResult = new Measurements();
+        methodCounter("retrieveMeasurements.counter");
         measurementsResult.measurements(measurements);
         return ResponseEntity.ok(measurementsResult);
     }
@@ -64,5 +69,13 @@ class DeviceController implements DeviceIdApi {
         final Long creationTime = measurement.getTimestamp();
         measurementDO.setCreationTime(creationTime == null ? currentTimeMillis() : creationTime);
         return measurementDO;
+    }
+
+    private void methodCounter(final String name) {
+        final String menthodName = new Object(){}.getClass().getEnclosingMethod().getName();
+
+        final Counter counter = Counter.builder(name).tag("method", menthodName).register(meterRegistry);
+
+        counter.increment();
     }
 }
