@@ -42,6 +42,8 @@ class DeviceController implements DeviceIdApi {
                 .stream()
                 .map(this::toMeasurement)
                 .toList();
+        final int measurementsSize = measurements.size();
+        LOGGER.info("Measurements size for device '{}'", measurementsSize);
         final Measurements measurementsResult = new Measurements();
         measurementsResult.measurements(measurements);
         return ResponseEntity.ok(measurementsResult);
